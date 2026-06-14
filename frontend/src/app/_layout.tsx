@@ -19,7 +19,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <StatusBar style="light" backgroundColor={COLORS.background} />
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,

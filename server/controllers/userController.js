@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Video = require('../models/Video');
+const Playlist = require('../models/Playlist');
 
 /**
  * @desc    Toggle video in user's favorites list
@@ -154,8 +155,113 @@ const getDashboard = async (req, res, next) => {
   }
 };
 
+const getPlaylists = async (req, res, next) => {
+  try {
+    const playlists = await Playlist.find({ createdBy: req.user.id }).populate('videos');
+    res.status(200).json(playlists);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createPlaylist = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name) {
+      const error = new Error('Playlist name is required');
+      error.status = 400;
+      throw error;
+    }
+
+    const playlist = await Playlist.create({
+      name,
+      createdBy: req.user.id,
+      videos: []
+    });
+
+    res.status(201).json(playlist);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const deletePlaylist = async (req, res, next) => {
+  try {
+    const { playlistId } = req.params;
+    const playlist = await Playlist.findOneAndDelete({ _id: playlistId, createdBy: req.user.id });
+    if (!playlist) {
+      const error = new Error('Playlist not found or unauthorized');
+      error.status = 444;
+      throw error;
+    }
+    res.status(200).json({ message: 'Playlist deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const addVideoToPlaylist = async (req, res, next) => {
+  try {
+    const { playlistId } = req.params;
+    const { videoId } = req.body;
+
+    if (!videoId) {
+      const error = new Error('Video ID is required');
+      error.status = 400;
+      throw error;
+    }
+
+    const playlist = await Playlist.findOne({ _id: playlistId, createdBy: req.user.id });
+    if (!playlist) {
+      const error = new Error('Playlist not found or unauthorized');
+      error.status = 444;
+      throw error;
+    }
+
+    if (playlist.videos.includes(videoId)) {
+      const error = new Error('Video already in playlist');
+      error.status = 400;
+      throw error;
+    }
+
+    playlist.videos.push(videoId);
+    await playlist.save();
+
+    const updatedPlaylist = await Playlist.findById(playlistId).populate('videos');
+    res.status(200).json(updatedPlaylist);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const removeVideoFromPlaylist = async (req, res, next) => {
+  try {
+    const { playlistId, videoId } = req.params;
+
+    const playlist = await Playlist.findOne({ _id: playlistId, createdBy: req.user.id });
+    if (!playlist) {
+      const error = new Error('Playlist not found or unauthorized');
+      error.status = 444;
+      throw error;
+    }
+
+    playlist.videos = playlist.videos.filter((vid) => vid.toString() !== videoId);
+    await playlist.save();
+
+    const updatedPlaylist = await Playlist.findById(playlistId).populate('videos');
+    res.status(200).json(updatedPlaylist);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   toggleFavorite,
   updateWatchHistory,
-  getDashboard
+  getDashboard,
+  getPlaylists,
+  createPlaylist,
+  deletePlaylist,
+  addVideoToPlaylist,
+  removeVideoFromPlaylist
 };
