@@ -1,15 +1,43 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import React from 'react';
+import { Stack } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '../contexts/AuthContext';
+import { StatusBar } from 'expo-status-bar';
+import COLORS from '../constants/colors';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+// Create a client for react-query
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false
+    }
+  }
+});
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <StatusBar style="light" backgroundColor={COLORS.background} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: COLORS.background }
+          }}
+        >
+          <Stack.Screen name="(auth)" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen 
+            name="player/[id]" 
+            options={{ 
+              headerShown: false, 
+              gestureEnabled: false,
+              animation: 'fade'
+            }} 
+          />
+        </Stack>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
